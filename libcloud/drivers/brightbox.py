@@ -98,10 +98,6 @@ class BrightboxNodeDriver(NodeDriver):
 
     NODE_STATE_MAP = { 'creating': NodeState.PENDING,
                        'active': NodeState.RUNNING,
-                       'snapshotting': NodeState.UNKNOWN,
-                       'rebuilding': NodeState.UNKNOWN,
-                       'stopping': NodeState.UNKNOWN,
-                       'starting': NodeState.PENDING,
                        'inactive': NodeState.UNKNOWN,
                        'deleting': NodeState.UNKNOWN,
                        'deleted': NodeState.TERMINATED,
