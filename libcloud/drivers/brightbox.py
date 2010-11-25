@@ -194,6 +194,9 @@ class BrightboxNodeDriver(NodeDriver):
 
         return map(self._to_location, data)
 
+    def ex_list_cloud_ips(self):
+        return self.connection.request('/%s/cloud_ips' % API_VERSION).object
+
     def ex_create_cloud_ip(self):
         return self._post('/%s/cloud_ips' % API_VERSION).object
 
