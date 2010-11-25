@@ -147,6 +147,11 @@ class BrightboxNodeDriver(NodeDriver):
             driver = self
         )
 
+    def _post(self, path, data={}):
+        headers = {'Content-Type': 'application/json'}
+
+        return self.connection.request(path, data=data, headers=headers, method='POST')
+
     def create_node(self, **kwargs):
         data = {
             'name': kwargs['name'],
@@ -160,9 +165,7 @@ class BrightboxNodeDriver(NodeDriver):
         else:
             data['zone'] = ''
 
-        headers = {'Content-Type': 'application/json'}
-
-        data = self.connection.request('/%s/servers' % API_VERSION, data=data, headers=headers, method='POST').object
+        data = self._post('/%s/servers' % API_VERSION, data).object
 
         return self._to_node(data)
 
@@ -190,3 +193,21 @@ class BrightboxNodeDriver(NodeDriver):
         data = self.connection.request('/%s/zones' % API_VERSION).object
 
         return map(self._to_location, data)
+
+    def ex_create_cloud_ip(self):
+        return self._post('/%s/cloud_ips' % API_VERSION).object
+
+    def ex_map_cloud_ip(self, cloud_ip_id, interface_id):
+        response = self._post('/%s/cloud_ips/%s/map' % (API_VERSION, cloud_ip_id), {'interface': interface_id})
+
+        return response.status == httplib.ACCEPTED
+
+    def ex_unmap_cloud_ip(self, cloud_ip_id):
+        response = self._post('/%s/cloud_ips/%s/unmap' % (API_VERSION, cloud_ip_id))
+
+        return response.status == httplib.ACCEPTED
+
+    def ex_destroy_cloud_ip(self, cloud_ip_id):
+        response = self.connection.request('/%s/cloud_ips/%s' % (API_VERSION, cloud_ip_id), method='DELETE')
+
+        return response.status == httplib.OK
