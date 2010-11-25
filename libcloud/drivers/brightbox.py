@@ -112,7 +112,8 @@ class BrightboxNodeDriver(NodeDriver):
             private_ip = map(lambda interface: interface['ipv4_address'], data['interfaces']),
             driver = self.connection.driver,
             extra = {
-                'status': data['status']
+                'status': data['status'],
+                'interfaces': data['interfaces']
             }
         )
 
