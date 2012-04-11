@@ -130,9 +130,7 @@ class ParamikoSSHClient(BaseSSHClient):
     def connect(self):
         conninfo = {'hostname': self.hostname,
                     'port': self.port,
-                    'username': self.username,
-                    'allow_agent': False,
-                    'look_for_keys': False}
+                    'username': self.username}
 
         if self.password:
             conninfo['password'] = self.password
