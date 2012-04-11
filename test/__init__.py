@@ -12,11 +12,42 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import httplib
-from cStringIO import StringIO
-from urllib2 import urlparse
+
+import random
+import unittest
+
 from cgi import parse_qs
-from libcloud.base import Node, NodeImage, NodeLocation
+
+from libcloud.utils.py3 import httplib
+from libcloud.utils.py3 import StringIO
+from libcloud.utils.py3 import urlparse
+from libcloud.utils.py3 import u
+
+
+XML_HEADERS = {'content-type': 'application/xml'}
+
+
+class LibcloudTestCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        self._visited_urls = []
+        self._executed_mock_methods = []
+        super(LibcloudTestCase, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        self._visited_urls = []
+        self._executed_mock_methods = []
+
+    def _add_visited_url(self, url):
+        self._visited_urls.append(url)
+
+    def _add_executed_mock_method(self, method_name):
+        self._executed_mock_methods.append(method_name)
+
+    def assertExecutedMethodCount(self, expected):
+        actual = len(self._executed_mock_methods)
+        self.assertEqual(actual, expected,
+                         'expected %d, but %d mock methods were executed'
+                         % (expected, actual))
 
 class multipleresponse(object):
     """
@@ -47,7 +78,7 @@ class MockResponse(object):
 
     def __init__(self, status, body, headers=None, reason=None):
         self.status = status
-        self.body = StringIO(body)
+        self.body = StringIO(u(body))
         self.headers = headers or self.headers
         self.reason = reason or self.reason
 
@@ -58,13 +89,22 @@ class MockResponse(object):
         return self.headers.get(name, *args, **kwargs)
 
     def getheaders(self):
-        return self.headers.items()
+        return list(self.headers.items())
 
     def msg(self):
         raise NotImplemented
 
+class BaseMockHttpObject(object):
+    def _get_method_name(self, type, use_param, qs, path):
+        meth_name = path.replace('/', '_').replace('.', '_').replace('-', '_')
+        if type:
+            meth_name = '%s_%s' % (meth_name, self.type)
+        if use_param:
+            param = qs[self.use_param][0].replace('.', '_').replace('-', '_')
+            meth_name = '%s_%s' % (meth_name, param)
+        return meth_name
 
-class MockHttp(object):
+class MockHttp(BaseMockHttpObject):
     """
     A mock HTTP client/server suitable for testing purposes. This replaces
     `HTTPConnection` by implementing its API and returning a mock response.
@@ -102,24 +142,28 @@ class MockHttp(object):
     type = None
     use_param = None # will use this param to namespace the request function
 
+    test = None # TestCase instance which is using this mock
+
     def __init__(self, host, port, *args, **kwargs):
         self.host = host
         self.port = port
 
-    def request(self, method, url, body=None, headers=None):
+    def request(self, method, url, body=None, headers=None, raw=False):
         # Find a method we can use for this request
         parsed = urlparse.urlparse(url)
         scheme, netloc, path, params, query, fragment = parsed
         qs = parse_qs(query)
         if path.endswith('/'):
             path = path[:-1]
-        meth_name = path.replace('/','_').replace('.', '_').replace('-','_')
-        if self.type:
-            meth_name = '%s_%s' % (meth_name, self.type)
-        if self.use_param:
-            param = qs[self.use_param][0].replace('.', '_').replace('-','_')
-            meth_name = '%s_%s' % (meth_name, param)
+        meth_name = self._get_method_name(type=self.type,
+                                          use_param=self.use_param,
+                                          qs=qs, path=path)
         meth = getattr(self, meth_name)
+
+        if self.test and isinstance(self.test, LibcloudTestCase):
+            self.test._add_visited_url(url=url)
+            self.test._add_executed_mock_method(method_name=meth_name)
+
         status, body, headers, reason = meth(method, url, body, headers)
         self.response = self.responseCls(status, body, headers, reason)
 
@@ -147,58 +191,103 @@ class MockHttp(object):
         return (httplib.FORBIDDEN, 'Oh Noes!', {'X-Foo': 'fail'},
                 httplib.responses[httplib.FORBIDDEN])
 
+class MockHttpTestCase(MockHttp, unittest.TestCase):
+    # Same as the MockHttp class, but you can also use assertions in the
+    # classes which inherit from this one.
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self)
 
-class TestCaseMixin(object):
+        if kwargs.get('host', None) and kwargs.get('port', None):
+            MockHttp.__init__(self, *args, **kwargs)
 
-    def test_list_nodes_response(self):
-        nodes = self.driver.list_nodes()
-        self.assertTrue(isinstance(nodes, list))
-        for node in nodes:
-            self.assertTrue(isinstance(node, Node))
+    def runTest(self):
+        pass
 
-    def test_list_sizes_response(self):
-        sizes = self.driver.list_sizes()
-        size = sizes[0]
-        self.assertTrue(isinstance(sizes, list))
-        # Check that size values are ints or None
-        self.assertTrue(size.ram is None or isinstance(size.ram, int))
-        self.assertTrue(size.disk is None or isinstance(size.disk, int))
-        self.assertTrue(size.bandwidth is None or
-                            isinstance(size.bandwidth, int))
+class StorageMockHttp(MockHttp):
+    def putrequest(self, method, action):
+        pass
 
-    def test_list_images_response(self):
-        images = self.driver.list_images()
-        self.assertTrue(isinstance(images, list))
-        for image in images:
-            self.assertTrue(isinstance(image, NodeImage))
+    def putheader(self, key, value):
+        pass
 
+    def endheaders(self):
+        pass
 
-    def test_list_locations_response(self):
-        locations = self.driver.list_locations()
-        self.assertTrue(isinstance(locations, list))
-        for dc in locations:
-            self.assertTrue(isinstance(dc, NodeLocation))
+    def send(self, data):
+        pass
 
-    def test_create_node_response(self):
-        # should return a node object
-        size = self.driver.list_sizes()[0]
-        image = self.driver.list_images()[0]
-        node = self.driver.create_node(name='node-name',
-                                     image=image,
-                                     size=size)
-        self.assertTrue(isinstance(node, Node))
+class MockRawResponse(BaseMockHttpObject):
+    """
+    Mock RawResponse object suitable for testing.
+    """
 
-    def test_destroy_node_response(self):
-        # should return a node object
-        node = self.driver.list_nodes()[0]
-        ret = self.driver.destroy_node(node)
-        self.assertTrue(isinstance(ret, bool))
+    type = None
+    responseCls = MockResponse
 
-    def test_reboot_node_response(self):
-        # should return a node object
-        node = self.driver.list_nodes()[0]
-        ret = self.driver.reboot_node(node)
-        self.assertTrue(isinstance(ret, bool))
+    def __init__(self, connection):
+        super(MockRawResponse, self).__init__()
+        self._data = []
+        self._current_item = 0
+
+        self._status = None
+        self._response = None
+        self._headers = None
+        self._reason = None
+        self.connection = connection
+
+    def next(self):
+        if self._current_item == len(self._data):
+            raise StopIteration
+
+        value = self._data[self._current_item]
+        self._current_item += 1
+        return value
+
+    def __next__(self):
+        return self.next()
+
+    def _generate_random_data(self, size):
+        data = []
+        current_size = 0
+        while current_size < size:
+            value = str(random.randint(0, 9))
+            value_size = len(value)
+            data.append(value)
+            current_size += value_size
+
+        return data
+
+    @property
+    def response(self):
+        return self._get_response_if_not_availale()
+
+    @property
+    def status(self):
+        self._get_response_if_not_availale()
+        return self._status
+
+    @property
+    def headers(self):
+        self._get_response_if_not_availale()
+        return self._headers
+
+    @property
+    def reason(self):
+        self._get_response_if_not_availale()
+        return self._reason
+
+    def _get_response_if_not_availale(self):
+        if not self._response:
+            meth_name = self._get_method_name(type=self.type,
+                                              use_param=False, qs=None,
+                                              path=self.connection.action)
+            meth = getattr(self, meth_name)
+            result = meth(self.connection.method, None, None, None)
+            self._status, self._body, self._headers, self._reason = result
+            self._response = self.responseCls(self._status, self._body,
+                                              self._headers, self._reason)
+            return self
+        return self._response
 
 if __name__ == "__main__":
     import doctest

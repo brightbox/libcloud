@@ -1,7 +1,6 @@
-
 General Information
 ===================
- * URL: http://incubator.apache.org/libcloud/devinfo.html
+ * URL: http://libcloud.apache.org/libcloud/devinfo.html
 
 Git Repositories
 ===================
@@ -36,6 +35,13 @@ Using The Git-SVN Bridge (For Committers)
 Testing
 =======
 
+ To run the libcloud test suite you need to have the following extra
+ dependencies installed:
+
+ * mock (pip install mock)
+ * coverage (pip install coverage) - you only need this library if you
+   want to generate a test coverage report
+
  Libcloud includes an example secrets.py file at:
   test/secrets.py-dist
 
@@ -56,21 +62,13 @@ Testing
 
  To run specific tests:
 
-  libcloud$ PYTHONPATH=. python test/test_base.py
+  libcloud$ PYTHONPATH=. python test/compute/test_base.py
   .......
   ----------------------------------------------------------------------
   Ran 7 tests in 0.001s
 
   OK
 
-Making a release
-=======
- 
- We have a script that runs the required setup.py commands and then hashes
- and signs the files.  To run it:
+ To generate test coverage report run:
 
-    cd dist
-    ./release.sh -u yourusername@apache.org
-
- This should result in a set of apache-libcloud-${VERSION}.{tar.bz2,zip}{,asc,md5,sha1}
- files that are suitable to be uploaded for a release.
+  libcloud$ PYTHONPATH=. python setup.py coverage

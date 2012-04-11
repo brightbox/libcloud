@@ -12,20 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from file_fixtures import FileFixtures
-
 import sys
 import unittest
+
+from test.file_fixtures import ComputeFileFixtures
 
 class FileFixturesTests(unittest.TestCase):
 
     def test_success(self):
-        f = FileFixtures('meta')
+        f = ComputeFileFixtures('meta')
         self.assertEqual("Hello, World!", f.load('helloworld.txt'))
 
     def test_failure(self):
-        f = FileFixtures('meta')
+        f = ComputeFileFixtures('meta')
         self.assertRaises(IOError, f.load, 'nil')
 
 if __name__ == '__main__':

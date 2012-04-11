@@ -1,16 +1,17 @@
 Apache libcloud - a unified interface into the cloud
+====================================================
 
-The goal of this project is to create a basic yet functional standard library 
+The goal of this project is to create a basic yet functional standard library
 into various cloud providers.
 
-Apache libcloud is an incubator project at the Apache Software Foundation, see
-<http://incubator.apache.org/libcloud> for more information.
+Apache libcloud is an Apache project, see <http://libcloud.apache.org> for
+more information.
 
 For API documentation and examples, see:
-  <http://incubator.apache.org/libcloud/getting-started.html>
+ <http://libcloud.apache.org/getting-started.html>
 
-WARNING: Python's built-in SSL does not do certificate validation.  As such, one
-cannot be sure of the other end of the conversation with any sufficient
-authority.  If you are in a position to be exploited (i.e., on an untrusted
-network), be cautious with SSL connections.  This is an issue with upstream
-Python (see http://bugs.python.org/issue1589 for details) and not with libcloud.
+Feedback
+========
+
+Please send feedback to the mailing list at <dev@libcloud.apache.org>,
+or the JIRA at <https://issues.apache.org/jira/browse/LIBCLOUD>.
