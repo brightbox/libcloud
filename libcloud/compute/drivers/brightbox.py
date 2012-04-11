@@ -70,11 +70,18 @@ class BrightboxNodeDriver(NodeDriver):
         )
 
     def _to_image(self, data):
+        extra_data=_extract(data, ['ancestor', 'arch', 'compatibility_mode', 'created_at',
+                                   'description', 'disk_size', 'min_ram', 'official',
+                                   'owner', 'public', 'source', 'source_type',
+                                   'status', 'username', 'virtual_size', 'licence_name'])
+        if 'ancestor' in data and data['ancestor'] is not None:
+            extra_data['ancestor'] = self._to_image(data['ancestor'])
+           
         return NodeImage(
             id=data['id'],
             name=data['name'],
             driver=self,
-            extra=_extract(data, ['description', 'arch'])
+            extra=extra_data
         )
 
     def _to_size(self, data):

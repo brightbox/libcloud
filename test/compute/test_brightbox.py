@@ -82,7 +82,6 @@ class BrightboxTest(unittest.TestCase, TestCaseMixin):
         self.assertTrue('created_at' in nodes[0].extra)
         self.assertTrue('deleted_at' in nodes[0].extra)
 
-
     def test_list_sizes(self):
         sizes = self.driver.list_sizes()
         self.assertEqual(len(sizes), 1)
@@ -92,10 +91,30 @@ class BrightboxTest(unittest.TestCase, TestCaseMixin):
 
     def test_list_images(self):
         images = self.driver.list_images()
-        self.assertEqual(len(images), 1)
-        self.assertEqual(images[0].id, 'img-9vxqi')
-        self.assertEqual(images[0].name, 'Brightbox Lucid 32')
-        self.assertEqual(images[0].extra['arch'], '32-bit')
+        self.assertEqual(len(images), 25)
+        self.assertEqual(images[0].id, 'img-99q79')
+        self.assertEqual(images[0].name, 'CentOS 5.5 server')
+
+    def test_list_images_extras(self):
+        images = self.driver.list_images()
+        extra = images[24].extra
+        self.assertTrue(extra['ancestor'] is None)
+        self.assertEqual(extra['arch'], 'i686')
+        self.assertFalse(extra['compatibility_mode'])
+        self.assertEqual(extra['created_at'], '2012-01-22T05:36:24Z')
+        self.assertTrue('description' in extra)
+        self.assertEqual(extra['disk_size'], 671)
+        self.assertTrue(extra['min_ram'] is None)
+        self.assertFalse(extra['official'])
+        self.assertEqual(extra['owner'], 'acc-tqs4c')
+        self.assertTrue(extra['public'])
+        self.assertEqual(extra['source'], 'oneiric-i386-20178.gz')
+        self.assertEqual(extra['source_type'], 'upload')
+        self.assertEqual(extra['status'], 'deprecated')
+        self.assertEqual(extra['username'], 'ubuntu')
+        self.assertEqual(extra['virtual_size'], 1025)
+        self.assertFalse('licence_name' in extra)
+
 
     def test_reboot_node_response(self):
         node = self.driver.list_nodes()[0]
