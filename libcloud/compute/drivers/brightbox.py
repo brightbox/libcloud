@@ -1,3 +1,4 @@
+#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -25,6 +26,8 @@ from libcloud.compute.base import Node, NodeImage, NodeSize, NodeLocation
 
 API_VERSION = '1.0'
 
+def _extract(d, keys):
+    return dict((k, d[k]) for k in keys if k in d)
 
 class BrightboxNodeDriver(NodeDriver):
     """
@@ -45,20 +48,25 @@ class BrightboxNodeDriver(NodeDriver):
                       'failed': NodeState.UNKNOWN,
                       'unavailable': NodeState.UNKNOWN}
 
+
     def _to_node(self, data):
         return Node(
             id=data['id'],
             name=data['name'],
             state=self.NODE_STATE_MAP[data['status']],
-            public_ips=list(map(lambda cloud_ip: cloud_ip['public_ip'],
-                                                   data['cloud_ips'])),
-            private_ips=list(map(lambda interface: interface['ipv4_address'],
-                                                     data['interfaces'])),
+            private_ips=[interface['ipv4_address']
+                         for interface in data['interfaces']
+                         if 'ipv4_address' in interface],
+
+            public_ips=[cloud_ip['public_ip'] 
+                        for cloud_ip in data['cloud_ips']] +
+                       [interface['ipv6_address']
+                        for interface in data['interfaces']
+                        if 'ipv6_address' in interface],
             driver=self.connection.driver,
-            extra={
-                'status': data['status'],
-                'interfaces': data['interfaces']
-            }
+            size=self._to_size(data['server_type']),
+            image=self._to_image(data['image']),
+            extra=_extract(data, ['fqdn', 'status', 'interfaces', 'zone', 'snapshots', 'server_groups', 'hostname', 'started_at', 'created_at', 'deleted_at'])
         )
 
     def _to_image(self, data):
@@ -66,10 +74,7 @@ class BrightboxNodeDriver(NodeDriver):
             id=data['id'],
             name=data['name'],
             driver=self,
-            extra={
-                'description': data['description'],
-                'arch': data['arch']
-            }
+            extra=_extract(data, ['description', 'arch'])
         )
 
     def _to_size(self, data):
@@ -158,3 +163,5 @@ class BrightboxNodeDriver(NodeDriver):
         response = self.connection.request('/%s/cloud_ips/%s' % (API_VERSION, cloud_ip_id), method='DELETE')
 
         return response.status == httplib.OK
+
+# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=python

@@ -46,10 +46,42 @@ class BrightboxTest(unittest.TestCase, TestCaseMixin):
 
     def test_list_nodes(self):
         nodes = self.driver.list_nodes()
-        self.assertEqual(len(nodes), 1)
-        self.assertTrue('109.107.42.129' in nodes[0].public_ips)
-        self.assertTrue('10.110.24.54' in nodes[0].private_ips)
+        self.assertEqual(len(nodes), 2)
+        self.assertEqual(len(nodes[0].public_ips), 1)
+        self.assertEqual(len(nodes[1].public_ips), 1)
+        self.assertEqual(len(nodes[0].private_ips), 1)
+        self.assertEqual(len(nodes[1].private_ips), 1)
+        self.assertTrue('109.107.35.16' in nodes[0].public_ips)
+        self.assertTrue('10.74.210.210' in nodes[0].private_ips)
+        self.assertTrue('10.240.228.234' in nodes[1].private_ips)
+        self.assertTrue('2a02:1348:14c:393a:24:19ff:fef0:e4ea' in nodes[1].public_ips)
         self.assertEqual(nodes[0].state, NodeState.RUNNING)
+        self.assertEqual(nodes[1].state, NodeState.RUNNING)
+
+    def test_list_node_extras(self):
+        nodes = self.driver.list_nodes()
+        self.assertFalse(nodes[0].size is None)
+        self.assertFalse(nodes[1].size is None)
+        self.assertFalse(nodes[0].image is None)
+        self.assertFalse(nodes[1].image is None)
+        self.assertEqual(nodes[0].image.id, 'img-arm8f')
+        self.assertEqual(nodes[0].size.id, 'typ-urtky')
+        self.assertEqual(nodes[1].image.id, 'img-j93gd')
+        self.assertEqual(nodes[1].size.id, 'typ-qdiwq')
+        self.assertEqual(nodes[0].extra['fqdn'],'srv-xvpn7.gb1.brightbox.com')
+        self.assertEqual(nodes[1].extra['fqdn'],'srv-742vn.gb1.brightbox.com')
+        self.assertEqual(nodes[0].extra['hostname'],'srv-xvpn7')
+        self.assertEqual(nodes[1].extra['hostname'],'srv-742vn')
+        self.assertEqual(nodes[0].extra['status'], 'active')
+        self.assertEqual(nodes[1].extra['status'], 'active')
+        self.assertTrue('interfaces' in nodes[0].extra)
+        self.assertTrue('zone' in nodes[0].extra)
+        self.assertTrue('snapshots' in nodes[0].extra)
+        self.assertTrue('server_groups' in nodes[0].extra)
+        self.assertTrue('started_at' in nodes[0].extra)
+        self.assertTrue('created_at' in nodes[0].extra)
+        self.assertTrue('deleted_at' in nodes[0].extra)
+
 
     def test_list_sizes(self):
         sizes = self.driver.list_sizes()
@@ -112,7 +144,7 @@ class BrightboxMockHttp(MockHttp):
 
             return self.response(httplib.ACCEPTED, json.dumps(node))
 
-    def _1_0_servers_srv_3a97e(self, method, url, body, headers):
+    def _1_0_servers_srv_xvpn7(self, method, url, body, headers):
         if method == 'DELETE':
             return self.response(httplib.ACCEPTED, '')
 
@@ -130,3 +162,6 @@ class BrightboxMockHttp(MockHttp):
 
 if __name__ == '__main__':
     sys.exit(unittest.main())
+
+# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=python
+
