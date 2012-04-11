@@ -84,10 +84,13 @@ class BrightboxTest(unittest.TestCase, TestCaseMixin):
 
     def test_list_sizes(self):
         sizes = self.driver.list_sizes()
-        self.assertEqual(len(sizes), 1)
+        self.assertEqual(len(sizes), 7)
         self.assertEqual(sizes[0].id, 'typ-4nssg')
         self.assertEqual(sizes[0].name, 'Brightbox Nano Instance')
         self.assertEqual(sizes[0].ram, 512)
+        self.assertEqual(sizes[0].disk, 20480)
+        self.assertEqual(sizes[0].bandwidth, 0)
+        self.assertEqual(sizes[0].price, 0)
 
     def test_list_images(self):
         images = self.driver.list_images()
