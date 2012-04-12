@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -71,6 +70,7 @@ class BrightboxNodeDriver(NodeDriver):
             id=data['id'],
             name=data['name'],
             state=self.NODE_STATE_MAP[data['status']],
+
             private_ips=[interface['ipv4_address']
                          for interface in data['interfaces']
                          if 'ipv4_address' in interface],
@@ -80,6 +80,7 @@ class BrightboxNodeDriver(NodeDriver):
                        [interface['ipv6_address']
                         for interface in data['interfaces']
                         if 'ipv6_address' in interface],
+
             driver=self.connection.driver,
             size=self._to_size(data['server_type']),
             image=self._to_image(data['image']),
@@ -93,6 +94,7 @@ class BrightboxNodeDriver(NodeDriver):
                                    'owner', 'public', 'source',
                                    'source_type', 'status', 'username',
                                    'virtual_size', 'licence_name'])
+
         if data.get('ancestor', None):
             extra_data['ancestor'] = self._to_image(data['ancestor'])
            
@@ -124,12 +126,10 @@ class BrightboxNodeDriver(NodeDriver):
 
     def _post(self, path, data={}):
         headers = {'Content-Type': 'application/json'}
-
         return self.connection.request(path, data=data, headers=headers, method='POST')
 
     def _put(self, path, data={}):
         headers = {'Content-Type': 'application/json'}
-
         return self.connection.request(path, data=data, headers=headers, method='PUT')
 
     def create_node(self, **kwargs):
@@ -162,7 +162,6 @@ class BrightboxNodeDriver(NodeDriver):
             data['server_groups'] = kwargs['ex_servergroup']
 
         data = self._post('/%s/servers' % self.api_version, data).object
-
         return self._to_node(data)
 
     def destroy_node(self, node):
@@ -170,28 +169,22 @@ class BrightboxNodeDriver(NodeDriver):
         Destroy node by passing in the node object
         """
         response = self.connection.request('/%s/servers/%s' % (self.api_version, node.id), method='DELETE')
-
         return response.status == httplib.ACCEPTED
 
     def list_nodes(self):
         data = self.connection.request('/%s/servers' % self.api_version).object
-
         return list(map(self._to_node, data))
 
     def list_images(self):
-
         data = self.connection.request('/%s/images' % self.api_version).object
-
         return list(map(self._to_image, data))
 
     def list_sizes(self):
         data = self.connection.request('/%s/server_types' % self.api_version).object
-
         return list(map(self._to_size, data))
 
     def list_locations(self):
         data = self.connection.request('/%s/zones' % self.api_version).object
-
         return list(map(self._to_location, data))
 
     def ex_list_cloud_ips(self):
@@ -216,8 +209,10 @@ class BrightboxNodeDriver(NodeDriver):
         @return: C{dict}
         """
         params={}
+
         if reverse_dns:
             params['reverse_dns'] = reverse_dns
+
         return self._post('/%s/cloud_ips' % self.api_version, params).object
 
     def ex_update_cloud_ip(self, cloud_ip_id, reverse_dns):
@@ -254,7 +249,6 @@ class BrightboxNodeDriver(NodeDriver):
         @return: C{bool} True if the mapping was successful.
         """
         response = self._post('/%s/cloud_ips/%s/map' % (self.api_version, cloud_ip_id), {'destination': interface_id})
-
         return response.status == httplib.ACCEPTED
 
     def ex_unmap_cloud_ip(self, cloud_ip_id):
@@ -271,7 +265,6 @@ class BrightboxNodeDriver(NodeDriver):
         @return: C{bool} True if the unmap was successful.
         """
         response = self._post('/%s/cloud_ips/%s/unmap' % (self.api_version, cloud_ip_id))
-
         return response.status == httplib.ACCEPTED
 
     def ex_destroy_cloud_ip(self, cloud_ip_id):
@@ -286,7 +279,6 @@ class BrightboxNodeDriver(NodeDriver):
         @return: C{bool} True if the unmap was successful.
         """
         response = self.connection.request('/%s/cloud_ips/%s' % (self.api_version, cloud_ip_id), method='DELETE')
-
         return response.status == httplib.OK
 
 # vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=python
