@@ -30,8 +30,6 @@ import base64
 
 API_VERSION = '1.0'
 
-def _extract(d, keys):
-    return dict((k, d[k]) for k in keys if k in d and d[k] is not None)
 
 def _extract(d, keys):
     return dict((k, d[k]) for k in keys if k in d and d[k] is not None)
@@ -138,10 +136,6 @@ class BrightboxNodeDriver(NodeDriver):
         headers = {'Content-Type': 'application/json'}
         return self.connection.request(path, data=data, headers=headers,
                                        method='PUT')
-
-    def _put(self, path, data={}):
-        headers = {'Content-Type': 'application/json'}
-        return self.connection.request(path, data=data, headers=headers, method='PUT')
 
     def create_node(self, **kwargs):
         """Create a new Brightbox node
@@ -300,5 +294,3 @@ class BrightboxNodeDriver(NodeDriver):
         response = self.connection.request('/%s/cloud_ips/%s' %
                            (self.api_version, cloud_ip_id), method='DELETE')
         return response.status == httplib.OK
-
-# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=python
