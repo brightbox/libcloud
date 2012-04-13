@@ -15,12 +15,15 @@
 import sys
 import unittest
 import base64
-from libcloud.utils.py3 import httplib
 
 try:
     import simplejson as json
 except ImportError:
     import json
+
+from libcloud.utils.py3 import httplib
+from libcloud.utils.py3 import b
+from libcloud.utils.py3 import u
 
 from libcloud.common.types import InvalidCredsError
 from libcloud.compute.drivers.brightbox import BrightboxNodeDriver
@@ -31,7 +34,7 @@ from test.compute import TestCaseMixin
 from test.file_fixtures import ComputeFileFixtures
 from test.secrets import BRIGHTBOX_PARAMS
 
-USER_DATA="#!/bin/sh\ntest_script.sh\n"
+USER_DATA = '#!/bin/sh\ntest_script.sh\n'
 
 class BrightboxTest(unittest.TestCase, TestCaseMixin):
     def setUp(self):
@@ -47,7 +50,8 @@ class BrightboxTest(unittest.TestCase, TestCaseMixin):
         self.assertRaises(InvalidCredsError, self.driver.list_nodes)
 
     def test_invalid_api_version(self):
-        self.driver = BrightboxNodeDriver(*BRIGHTBOX_PARAMS, api_version='2.0')
+        kwargs = {'api_version': '2.0'}
+        self.driver = BrightboxNodeDriver(*BRIGHTBOX_PARAMS, **kwargs)
         self.assertRaises(Exception, self.driver.list_locations)
 
     def test_other_host(self):
@@ -167,8 +171,9 @@ class BrightboxTest(unittest.TestCase, TestCaseMixin):
         size = self.driver.list_sizes()[0]
         image = self.driver.list_images()[0]
         node = self.driver.create_node(name='Test Node', image=image, size=size, ex_userdata=USER_DATA)
+        decoded = base64.b64decode(b(node.extra['user_data'])).decode('ascii')
         self.assertEqual('gb1-a', node.extra['zone'].name)
-        self.assertEqual(USER_DATA, base64.b64decode(node.extra['user_data']))
+        self.assertEqual(USER_DATA, decoded)
 
     def test_create_node_with_a_server_group(self):
         size = self.driver.list_sizes()[0]
@@ -248,8 +253,9 @@ class BrightboxMockHttp(MockHttp):
             return self.response(httplib.OK, self.fixtures.load('list_servers.json'))
         elif method == 'POST':
             body = json.loads(body)
+            encoded = base64.b64encode(b(USER_DATA)).decode('ascii')
 
-            if 'user_data' in body and body['user_data'] != base64.b64encode(USER_DATA):
+            if 'user_data' in body and body['user_data'] != encoded:
                 return self.response(httplib.BAD_REQUEST, '{"error_name":"dodgy user data", "errors": ["User data not encoded properly"]}')
             if body.get('zone', '') == 'zon-remk1':
                 node = json.loads(self.fixtures.load('create_server_gb1_b.json'))
