@@ -24,6 +24,7 @@ except ImportError:
     import json
 
 from libcloud.utils.py3 import PY3
+from libcloud.utils.py3 import b
 from libcloud.utils.py3 import urlquote
 
 if PY3:
@@ -482,7 +483,7 @@ class CloudFilesStorageDriver(StorageDriver, OpenStackDriverMixin):
 
         if verify_hash:
             hash_function = self._get_hash_function()
-            hash_function.update(data)
+            hash_function.update(b(data))
             data_hash = hash_function.hexdigest()
             object_hash = response.headers.get('etag')
 
@@ -708,20 +709,19 @@ class FileChunkReader(object):
         return self
 
     def next(self):
-        if not self.stop_iteration:
-            start_block = self.bytes_read
-            end_block = start_block + self.chunk_size
-            if end_block > self.total:
-                end_block = self.total
-                self.stop_iteration = True
-            self.bytes_read += end_block - start_block
-            return ChunkStreamReader(file_path=self.file_path,
-                                     start_block=start_block,
-                                     end_block=end_block,
-                                     chunk_size=8192)
-
-        else:
+        if self.stop_iteration:
             raise StopIteration
+
+        start_block = self.bytes_read
+        end_block = start_block + self.chunk_size
+        if end_block >= self.total:
+            end_block = self.total
+            self.stop_iteration = True
+        self.bytes_read += end_block - start_block
+        return ChunkStreamReader(file_path=self.file_path,
+                                 start_block=start_block,
+                                 end_block=end_block,
+                                 chunk_size=8192)
 
 
 class ChunkStreamReader(object):
@@ -738,18 +738,17 @@ class ChunkStreamReader(object):
         return self
 
     def next(self):
-        if not self.stop_iteration:
-            block_size = self.chunk_size
-            if self.bytes_read + block_size > \
-                self.end_block - self.start_block:
-                    block_size = self.end_block - self.start_block - \
-                                 self.bytes_read
-                    self.stop_iteration = True
-
-            block = self.fd.read(block_size)
-            self.bytes_read += block_size
-            return block
-
-        else:
+        if self.stop_iteration:
             self.fd.close()
             raise StopIteration
+
+        block_size = self.chunk_size
+        if self.bytes_read + block_size > \
+            self.end_block - self.start_block:
+                block_size = self.end_block - self.start_block - \
+                             self.bytes_read
+                self.stop_iteration = True
+
+        block = self.fd.read(block_size)
+        self.bytes_read += block_size
+        return block
